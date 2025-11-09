@@ -1,0 +1,8 @@
+streamlit
+pandas
+numpy
+plotly
+spotipy
+google-api-python-client
+google-auth-oauthlib
+python-dotenv
