@@ -509,14 +509,23 @@ def main():
     }
     </style>
     """, unsafe_allow_html=True)
+    def get_base64_image(image_path):
+        import base64
+        with open(image_path, "rb") as img_file:
+            return base64.b64encode(img_file.read()).decode()
+
+    # Convert logo to Base64
+    image_base64 = get_base64_image("./assets/logo.png")
 
     # Main header with logo and title
-    st.markdown("""
-    <div class="logo-container">
-        <img src="./assets/logo.png" alt="TuneIQ Logo" class="logo-image" style="width: 100px; height: 100px; object-fit: contain;">
+    st.markdown(f"""
+    <div class="logo-container" style="display:flex; align-items:center; gap:20px; margin-bottom:20px;">
+        <img src="data:image/png;base64,{image_base64}" 
+            alt="TuneIQ Logo" 
+            style="width:100px; height:100px; object-fit:contain;">
         <div class="logo-text">
-            <h1 class="logo-title">TuneIQ Insight</h1>
-            <div class="logo-tagline">Smart Data for Nigerian Music</div>
+            <h1 class="logo-title" style="margin:0; color:#00FFC2;">TuneIQ Insight</h1>
+            <div class="logo-tagline" style="font-size:1.1em; color:#ccc;">Smart Data for Nigerian Music</div>
         </div>
     </div>
     """, unsafe_allow_html=True)
