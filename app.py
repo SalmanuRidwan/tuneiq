@@ -787,21 +787,21 @@ def main():
             st.markdown('</div>', unsafe_allow_html=True)
     
     # Sidebar mirror of filters (synced with header)
-    st.sidebar.header("Filters & Drilldown")
+    # st.sidebar.header("Filters & Drilldown")
     selected_platforms = header_platforms  # Use header selection
     selected_months = header_months  # Use header selection
     drill_country = header_country  # Use header selection
     
     # Show current selections in sidebar for reference
-    st.sidebar.markdown("### Current Filters")
+    # st.sidebar.markdown("### Current Filters")
     
     # Ensure we have lists before joining
     platforms_display = selected_platforms if isinstance(selected_platforms, list) else []
     months_display = selected_months if isinstance(selected_months, list) else []
     
-    st.sidebar.markdown(f"**Platforms:** {', '.join(map(str, platforms_display))}")
-    st.sidebar.markdown(f"**Months:** {', '.join(map(str, months_display))}")
-    st.sidebar.markdown(f"**Country:** {drill_country if drill_country else 'All'}")
+    # st.sidebar.markdown(f"**Platforms:** {', '.join(map(str, platforms_display))}")
+    # st.sidebar.markdown(f"**Months:** {', '.join(map(str, months_display))}")
+    # st.sidebar.markdown(f"**Country:** {drill_country if drill_country else 'All'}")
 
     # Ensure platform and month are strings before filtering
     df['platform'] = df['platform'].fillna('Unknown').astype(str)
