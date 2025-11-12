@@ -74,13 +74,13 @@ st.markdown("""
     :root{
         --bg-1: #F4F7F5;
         --bg-2: #F4F7F5;
-        --neon-1: #068D9D;
-        --neon-2: #068D9D;
-        --accent: #3C3744;
-        --gold: #068D9D;
-        --silver: #3C3744;
-        --glass: rgba(6,141,157,0.08);
-        --muted: #3C3744;
+        --neon-1: #0EA5A4; /* teal */
+        --neon-2: #7C3AED; /* violet accent */
+        --accent: #1F213A; /* deep indigo */
+        --gold: #F59E0B; /* warm accent */
+        --silver: #94A3B8;
+        --glass: rgba(14,165,164,0.08);
+        --muted: #475569;
     }
     
     /* Logo styles */
@@ -192,6 +192,55 @@ st.markdown("""
 
     /* Footer */
     footer { opacity: 0.8; color: #068D9D !important; }
+    
+    /* Web Scraper Section Styling */
+    .web-scraper-container {
+        background: linear-gradient(135deg, rgba(6,141,157,0.08), rgba(60,55,68,0.06));
+        border: 1px solid rgba(6,141,157,0.25);
+        border-radius: 12px;
+        padding: 20px;
+        margin: 15px 0;
+        backdrop-filter: blur(10px);
+    }
+    
+    .web-scraper-title {
+        font-size: 1.3em;
+        font-weight: 600;
+        color: #068D9D;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .web-data-card {
+        background: linear-gradient(135deg, rgba(6,141,157,0.05), rgba(60,55,68,0.03));
+        border: 1px solid rgba(6,141,157,0.15);
+        border-radius: 8px;
+        padding: 15px;
+        margin: 10px 0;
+        transition: all 0.3s ease;
+    }
+    
+    .web-data-card:hover {
+        border-color: rgba(6,141,157,0.35);
+        box-shadow: 0 4px 12px rgba(6,141,157,0.1);
+    }
+    
+    /* Tab styling */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        padding: 8px 16px;
+        border-radius: 6px;
+        color: #3C3744 !important;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        border-bottom: 2px solid #068D9D;
+    }
 
 </style>
 """, unsafe_allow_html=True)
@@ -220,7 +269,7 @@ def load_data(use_live: bool = False) -> pd.DataFrame:
                 spotify_creds=st.session_state.get('spotify_creds') if "Spotify" in platforms_to_fetch else None,
                 youtube_creds=st.session_state.get('youtube_creds') if "YouTube" in platforms_to_fetch else None,
                 apple_music_creds=st.session_state.get('apple_music_creds') if "Apple Music" in platforms_to_fetch else None,
-                artist_name=st.session_state.get('artist_name')
+                artist_name=st.session_state.get('filter_artist') or st.session_state.get('artist_name')
             )
 
     # Default: sample data
@@ -265,7 +314,7 @@ def render_kpi_cards(df: pd.DataFrame, impact_metrics: Dict):
         alert_count = len(underpaid)
         st.metric(
             "Underpayment Alerts",
-            f"{alert_count} Regions",
+            f"{alert_count} Countries",
             "Requiring Investigation"
         )
 
@@ -569,6 +618,13 @@ def main():
         st.session_state.platforms_to_fetch = ["Spotify"]  # Default platform
     if 'selected_platforms' not in st.session_state:
         st.session_state.selected_platforms = ["Spotify"]  # Default platform
+    if 'web_scraped_data' not in st.session_state:
+        st.session_state.web_scraped_data = pd.DataFrame()  # Empty DataFrame for web scrape results
+    if 'web_scraped_artist' not in st.session_state:
+        st.session_state.web_scraped_artist = None  # Track which artist was scraped
+    if 'filter_artist' not in st.session_state:
+        # Default artist selection for Filters & Analysis (keeps prior behavior if Burna Boy exists)
+        st.session_state.filter_artist = NIGERIAN_ARTISTS[0] if len(NIGERIAN_ARTISTS) > 0 else None
 
     # Header buttons in a single row with selection state
     header_cols = st.columns(2)
@@ -593,7 +649,7 @@ def main():
         if st.button(
             "🔍 Filters & Analysis",
             key="filters_btn",
-            help="Set time period and region filters",
+            help="Set time period and country filters",
             use_container_width=True
         ):
             st.session_state.show_filters = not st.session_state.show_filters
@@ -628,37 +684,44 @@ def main():
             
             # Web Scraper Quick Access
             st.markdown("---")
-            st.markdown('<p class="section-title">Web Data Source</p>', unsafe_allow_html=True)
+            st.markdown('<p class="section-title">🌐 Web Data Source</p>', unsafe_allow_html=True)
             
             web_scraper_col1, web_scraper_col2 = st.columns([2, 1])
             with web_scraper_col1:
-                web_artist = st.text_input(
-                    "Artist Name for Web Scraping",
-                    value="Burna Boy",
-                    help="Enter artist name to fetch trending data and news"
-                )
+                # Artist selection has been moved to Filters & Analysis.
+                current_filter_artist = st.session_state.get('filter_artist', NIGERIAN_ARTISTS[0] if NIGERIAN_ARTISTS else 'Unknown')
+                st.markdown(f"**Artist (Filters & Analysis):** {current_filter_artist}")
             with web_scraper_col2:
-                fetch_web_data = st.button("🔍 Scrape Web Data", use_container_width=True)
+                fetch_web_data = st.button("🔍 Scrape Web Data", use_container_width=True, key="web_scrape_btn")
             
             if fetch_web_data:
-                with st.spinner(f"Scraping web data for {web_artist}..."):
+                # Use the artist selected in Filters & Analysis
+                artist_for_scrape = st.session_state.get('filter_artist', NIGERIAN_ARTISTS[0] if NIGERIAN_ARTISTS else None)
+                with st.spinner(f"🔄 Scraping web data for {artist_for_scrape}..."):
                     try:
                         from data_pipeline import fetch_live_data
-                        web_df = fetch_live_data(source="web", artist_name=web_artist)
-                        
+                        web_df = fetch_live_data(source="web", artist_name=artist_for_scrape)
+
                         if not web_df.empty:
                             st.session_state['web_scraped_data'] = web_df
-                            st.success(f"✓ Successfully scraped {len(web_df)} results for {web_artist}")
-                            
+                            st.session_state['web_scraped_artist'] = artist_for_scrape
+                            st.success(f"✓ Successfully scraped {len(web_df)} results for {artist_for_scrape}")
+
                             # Show preview of scraped data
-                            with st.expander(f"Preview Web Data ({len(web_df)} results)"):
-                                st.dataframe(web_df, use_container_width=True)
+                            with st.expander(f"📋 Preview Web Data ({len(web_df)} results)", expanded=True):
+                                # Create a formatted display of web scrape results
+                                display_cols = ["artist", "title", "source", "url", "date_fetched"]
+                                available_cols = [col for col in display_cols if col in web_df.columns]
+                                st.dataframe(web_df[available_cols], use_container_width=True)
                         else:
-                            st.warning(f"No results found for {web_artist}. Try a different artist or check your internet connection.")
+                            st.warning(f"⚠️ No results found for {artist_for_scrape}. Try a different artist in Filters & Analysis or check your internet connection.")
                     except Exception as e:
                         st.error(f"✗ Web scraping failed: {str(e)}")
                 
             st.markdown('</div>', unsafe_allow_html=True)
+            # Mirror header selections into local variables used below
+            header_months = st.session_state.get('selected_months')
+            header_country = st.session_state.get('header_country')
 
     
     # Live data configuration in expandable section
@@ -673,15 +736,7 @@ def main():
             )
             st.session_state['platforms_to_fetch'] = platforms_to_fetch
 
-            # Artist selection (applies to live fetch)
-            artist_input = st.selectbox(
-                "Select Artist",
-                options=NIGERIAN_ARTISTS,
-                index=NIGERIAN_ARTISTS.index('Burna Boy') if 'Burna Boy' in NIGERIAN_ARTISTS else 0,
-                help="Choose a Nigerian artist to analyze"
-            )
-            if artist_input:
-                st.session_state['artist_name'] = artist_input
+            # Artist selection moved to Filters & Analysis (stored in session_state['filter_artist'])
 
             # Platform-specific credentials
             if "Spotify" in platforms_to_fetch:
@@ -737,7 +792,8 @@ def main():
             fetch_button = st.button("Fetch Live Data")
             if fetch_button:
                 st.session_state['fetching'] = True
-                selected_artist = st.session_state.get('artist_name')
+                # Use the filter artist selected in Filters & Analysis when fetching live data
+                selected_artist = st.session_state.get('filter_artist') or st.session_state.get('artist_name')
                 with st.spinner(f"Fetching live data for {selected_artist} from APIs (falls back to sample where necessary)..."):
                     try:
                         fetched = fetch_all(
@@ -785,7 +841,8 @@ def main():
         st.markdown("**Data source:** 🟢 Sample")
 
     # Artist badge (show thumbnail + resolved name)
-    artist_name_display = st.session_state.get('artist_name', 'Burna Boy')  # Default to Burna Boy if not set
+    # Display artist from Filters & Analysis (preferred), otherwise fall back to current fetched artist or legacy artist_name
+    artist_name_display = st.session_state.get('filter_artist') or st.session_state.get('current_artist') or st.session_state.get('artist_name') or 'Burna Boy'
     artist_image_display = None
     if 'artist_image' in df.columns and not df['artist_image'].isnull().all():
         artist_image_display = df['artist_image'].dropna().unique()[0]
@@ -831,16 +888,47 @@ def main():
             
             filter_cols = st.columns(2)
             with filter_cols[0]:
-                selected_months = st.multiselect(
+                # Present human-friendly month labels (e.g., Jan 2025) while storing the underlying month codes
+                def _format_month_label(m: str) -> str:
+                    try:
+                        if '-' in m:
+                            parts = m.split('-')
+                            year = int(parts[0]); month = int(parts[1])
+                            return pd.to_datetime(f"{year}-{month:02d}-01").strftime('%b %Y')
+                        return m
+                    except Exception:
+                        return m
+
+                month_display_map = {m: _format_month_label(m) for m in months}
+                month_display_list = [month_display_map[m] for m in months]
+
+                # Defaults: convert stored selected_months (which are codes) to display labels
+                default_display = [month_display_map.get(m, m) for m in st.session_state.get('selected_months', months)]
+
+                selected_display = st.multiselect(
                     "Time Period",
-                    months,
-                    default=st.session_state.selected_months,
-                    key="header_months"
+                    month_display_list,
+                    default=default_display
                 )
+
+                # Convert back to the underlying month codes and store
+                selected_months = [orig for orig, label in month_display_map.items() if label in selected_display]
+                if not selected_months:
+                    # fallback to all months when user clears selection
+                    selected_months = months
                 st.session_state.selected_months = selected_months
             with filter_cols[1]:
+                # Artist selector moved into Filters & Analysis (authoritative artist for the dashboard)
+                st.selectbox(
+                    "Select Artist",
+                    options=NIGERIAN_ARTISTS,
+                    index=NIGERIAN_ARTISTS.index('Burna Boy') if 'Burna Boy' in NIGERIAN_ARTISTS else 0,
+                    key="filter_artist",
+                    help="Choose a Nigerian artist to analyze"
+                )
+
                 header_country = st.selectbox(
-                    "Region",
+                    "Country",
                     country_options,
                     key="header_country"
                 )
@@ -852,6 +940,12 @@ def main():
     selected_platforms = header_platforms  # Use header selection
     selected_months = header_months  # Use header selection
     drill_country = header_country  # Use header selection
+
+    # If header-based selections are not present (filters hidden), fall back to session_state selections
+    if not selected_months or not isinstance(selected_months, list):
+        selected_months = st.session_state.get('selected_months', months)
+    if not drill_country:
+        drill_country = st.session_state.get('header_country')
     
     # Show current selections in sidebar for reference
     # st.sidebar.markdown("### Current Filters")
@@ -899,8 +993,99 @@ def main():
             actual_revenue_ngn=country_agg['actual_revenue_ngn'].map(lambda x: f"₦{x:,.0f}")
         ))
     
+    # Web Scraping Data Display
+    if 'web_scraped_data' in st.session_state and not st.session_state['web_scraped_data'].empty:
+        web_artist = st.session_state.get('web_scraped_artist', 'Unknown Artist')
+        web_df = st.session_state['web_scraped_data']
+        
+        st.markdown("---")
+        st.subheader(f"🌐 Web Research Data for {web_artist}")
+        
+        # Create tabs for different views
+        tab1, tab2, tab3 = st.tabs(["📰 All Sources", "🔗 By Source", "📊 Source Statistics"])
+        
+        with tab1:
+            # Display all scraped data in a nice format
+            st.write(f"**Total sources found:** {len(web_df)}")
+            
+            # Create columns for better display
+            cols_to_display = ['artist', 'title', 'source', 'url', 'date_fetched']
+            cols_available = [col for col in cols_to_display if col in web_df.columns]
+            
+            # Format and display
+            display_df = web_df[cols_available].copy()
+            
+            # Add clickable links if URL column exists
+            if 'url' in display_df.columns:
+                display_df['url'] = display_df['url'].apply(
+                    lambda x: f"[🔗 Link]({x})" if pd.notna(x) and x != 'N/A' else 'N/A'
+                )
+            
+            st.dataframe(
+                display_df,
+                use_container_width=True,
+                column_config={
+                    "artist": "Artist",
+                    "title": "Title/Content",
+                    "source": st.column_config.TextColumn("Source", width="medium"),
+                    "url": st.column_config.LinkColumn("URL"),
+                    "date_fetched": "Date Fetched"
+                } if 'url' in display_df.columns else None,
+                hide_index=True
+            )
+        
+        with tab2:
+            # Group by source and show statistics
+            source_breakdown = web_df['source'].value_counts().reset_index()
+            source_breakdown.columns = ['Source', 'Count']
+            
+            # Create two columns for breakdown
+            col_left, col_right = st.columns([1, 2])
+            
+            with col_left:
+                st.metric("Total Sources", len(web_df['source'].unique()))
+                st.dataframe(source_breakdown, hide_index=True, use_container_width=True)
+            
+            with col_right:
+                # Pie chart of source distribution
+                fig_sources = px.pie(
+                    source_breakdown,
+                    names='Source',
+                    values='Count',
+                    title='Data Distribution by Source',
+                    template='plotly_dark'
+                )
+                st.plotly_chart(fig_sources, use_container_width=True)
+        
+        with tab3:
+            # Source statistics and metadata
+            st.write("**Source Statistics**")
+            
+            stats_data = []
+            for source in web_df['source'].unique():
+                source_data = web_df[web_df['source'] == source]
+                stats_data.append({
+                    'Source': source,
+                    'Count': len(source_data),
+                    'First Fetched': source_data['date_fetched'].min(),
+                    'Last Fetched': source_data['date_fetched'].max()
+                })
+            
+            stats_df = pd.DataFrame(stats_data)
+            st.dataframe(stats_df, hide_index=True, use_container_width=True)
+            
+            # Export option
+            if st.button("📥 Export Web Data as CSV", key="export_web_data"):
+                csv = web_df.to_csv(index=False)
+                st.download_button(
+                    label="Download CSV",
+                    data=csv,
+                    file_name=f"web_scrape_{web_artist}_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                    mime="text/csv"
+                )
+    
     # Economic Impact Details
-    with st.expander("Economic Impact Analysis"):
+    with st.expander("📊 Economic Impact Analysis"):
         impact_df = pd.DataFrame([{
             'Metric': 'Direct Streaming Revenue',
             'Value': format_ngn(impact_metrics['direct_revenue_ngn'])
