@@ -73,7 +73,8 @@ def scrape_music_trends(artist_name: str = "Burna Boy", max_results: int = 10) -
 
 def _scrape_google_news(artist_name: str, max_results: int = 5) -> List[Dict]:
     """Scrape Google search results for artist news/mentions."""
-    base_url = f"https://www.google.com/search?q={artist_name}+streaming+music"
+    # base_url = f"https://www.google.com/search?q={artist_name}+streaming+music"
+    # base_url = f"https://kworb.net/spotify/artist/3wcj11K77LjEY1PkEazffa.html"
     headers = {"User-Agent": USER_AGENT}
     
     try:
@@ -114,7 +115,7 @@ def _scrape_google_news(artist_name: str, max_results: int = 5) -> List[Dict]:
 
 def _scrape_genius_artist(artist_name: str, max_results: int = 5) -> List[Dict]:
     """Scrape Genius Lyrics for artist songs and information."""
-    base_url = f"https://genius.com/search?q={artist_name}"
+    # base_url = f"https://genius.com/search?q={artist_name}"
     headers = {"User-Agent": USER_AGENT}
     
     try:
@@ -154,7 +155,7 @@ def _scrape_genius_artist(artist_name: str, max_results: int = 5) -> List[Dict]:
 
 def _scrape_allmusic_artist(artist_name: str, max_results: int = 5) -> List[Dict]:
     """Scrape AllMusic for artist information and discography."""
-    search_url = f"https://www.allmusic.com/search/all?query={artist_name}"
+    # search_url = f"https://www.allmusic.com/search/all?query={artist_name}"
     headers = {"User-Agent": USER_AGENT}
     
     try:

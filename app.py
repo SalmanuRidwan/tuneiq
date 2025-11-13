@@ -1371,40 +1371,42 @@ def main():
         with st.container():
             st.markdown('<div class="header-section">', unsafe_allow_html=True)
             st.markdown('<p class="section-title">Filters & Analysis</p>', unsafe_allow_html=True)
-            
+
             filter_cols = st.columns(2)
             with filter_cols[0]:
-                # Present human-friendly month labels (e.g., Jan 2025) while storing the underlying month codes
-                def _format_month_label(m: str) -> str:
-                    try:
-                        if '-' in m:
-                            parts = m.split('-')
-                            year = int(parts[0]); month = int(parts[1])
-                            return pd.to_datetime(f"{year}-{month:02d}-01").strftime('%b %Y')
-                        return m
-                    except Exception:
-                        return m
+                # --- Calendar-based time period selection ---
+                st.markdown("**Time Period**")
 
-                month_display_map = {m: _format_month_label(m) for m in months}
-                month_display_list = [month_display_map[m] for m in months]
+                # Determine default start and end dates from selected_months
+                def _get_month_range(month_code: str):
+                    year, month = map(int, month_code.split('-'))
+                    start_date = pd.Timestamp(year=year, month=month, day=1)
+                    end_date = (start_date + pd.offsets.MonthEnd(1))
+                    return start_date, end_date
 
-                # Defaults: convert stored selected_months (which are codes) to display labels
-                default_display = [month_display_map.get(m, m) for m in st.session_state.get('selected_months', months)]
+                # If session state already has months, get first and last date range
+                selected_months = st.session_state.get('selected_months', months)
+                start_default, _ = _get_month_range(selected_months[0])
+                _, end_default = _get_month_range(selected_months[-1])
 
-                selected_display = st.multiselect(
-                    "Time Period",
-                    month_display_list,
-                    default=default_display
+                # Calendar picker (range select)
+                date_range = st.date_input(
+                    "Select Date Range",
+                    value=(start_default, end_default),
+                    help="Select the start and end dates for analysis"
                 )
 
-                # Convert back to the underlying month codes and store
-                selected_months = [orig for orig, label in month_display_map.items() if label in selected_display]
-                if not selected_months:
-                    # fallback to all months when user clears selection
-                    selected_months = months
-                st.session_state.selected_months = selected_months
+                # Convert selected range back to list of month codes
+                if isinstance(date_range, tuple) and len(date_range) == 2:
+                    start, end = pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1])
+                    all_months = pd.period_range(start=start, end=end, freq='M').strftime("%Y-%m").tolist()
+                else:
+                    all_months = [pd.to_datetime(date_range).strftime("%Y-%m")]
+
+                st.session_state.selected_months = all_months
+
             with filter_cols[1]:
-                # Artist selector moved into Filters & Analysis (authoritative artist for the dashboard)
+                # --- Artist selector ---
                 st.selectbox(
                     "Select Artist",
                     options=NIGERIAN_ARTISTS,
@@ -1413,19 +1415,79 @@ def main():
                     help="Choose a Nigerian artist to analyze"
                 )
 
+                # --- Country selector ---
                 header_country = st.selectbox(
                     "Country",
                     country_options,
                     key="header_country"
                 )
-                
+
             st.markdown('</div>', unsafe_allow_html=True)
-    
+
     # Sidebar mirror of filters (synced with header)
-    # st.sidebar.header("Filters & Drilldown")
-    selected_platforms = header_platforms  # Use header selection
-    selected_months = header_months  # Use header selection
-    drill_country = header_country  # Use header selection
+    selected_platforms = header_platforms
+    selected_months = st.session_state.selected_months
+    drill_country = header_country
+
+    # if st.session_state.show_filters:
+    #     with st.container():
+    #         st.markdown('<div class="header-section">', unsafe_allow_html=True)
+    #         st.markdown('<p class="section-title">Filters & Analysis</p>', unsafe_allow_html=True)
+            
+    #         filter_cols = st.columns(2)
+    #         with filter_cols[0]:
+    #             # Present human-friendly month labels (e.g., Jan 2025) while storing the underlying month codes
+    #             def _format_month_label(m: str) -> str:
+    #                 try:
+    #                     if '-' in m:
+    #                         parts = m.split('-')
+    #                         year = int(parts[0]); month = int(parts[1])
+    #                         return pd.to_datetime(f"{year}-{month:02d}-01").strftime('%b %Y')
+    #                     return m
+    #                 except Exception:
+    #                     return m
+
+    #             month_display_map = {m: _format_month_label(m) for m in months}
+    #             month_display_list = [month_display_map[m] for m in months]
+
+    #             # Defaults: convert stored selected_months (which are codes) to display labels
+    #             default_display = [month_display_map.get(m, m) for m in st.session_state.get('selected_months', months)]
+
+    #             selected_display = st.multiselect(
+    #                 "Time Period",
+    #                 month_display_list,
+    #                 default=default_display
+    #             )
+
+    #             # Convert back to the underlying month codes and store
+    #             selected_months = [orig for orig, label in month_display_map.items() if label in selected_display]
+    #             if not selected_months:
+    #                 # fallback to all months when user clears selection
+    #                 selected_months = months
+    #             st.session_state.selected_months = selected_months
+    #         with filter_cols[1]:
+    #             # Artist selector moved into Filters & Analysis (authoritative artist for the dashboard)
+    #             st.selectbox(
+    #                 "Select Artist",
+    #                 options=NIGERIAN_ARTISTS,
+    #                 index=NIGERIAN_ARTISTS.index('Burna Boy') if 'Burna Boy' in NIGERIAN_ARTISTS else 0,
+    #                 key="filter_artist",
+    #                 help="Choose a Nigerian artist to analyze"
+    #             )
+
+    #             header_country = st.selectbox(
+    #                 "Country",
+    #                 country_options,
+    #                 key="header_country"
+    #             )
+                
+    #         st.markdown('</div>', unsafe_allow_html=True)
+    
+    # # Sidebar mirror of filters (synced with header)
+    # # st.sidebar.header("Filters & Drilldown")
+    # selected_platforms = header_platforms  # Use header selection
+    # selected_months = header_months  # Use header selection
+    # drill_country = header_country  # Use header selection
 
     # If header-based selections are not present (filters hidden), fall back to session_state selections
     if not selected_months or not isinstance(selected_months, list):
