@@ -2,6 +2,7 @@
 Data pipeline for TuneIQ Insight - handles both sample and live data sources.
 Supports fallback to sample data when API keys aren't configured.
 Includes web scraping as an alternative data enrichment source.
+Integrates ML model predictions for GDP and job creation estimates.
 """
 
 import os
@@ -11,6 +12,7 @@ from tuneiq_app.spotify_fetch import get_spotify_data
 from tuneiq_app.youtube_fetch_oauth import get_youtube_analytics
 from tuneiq_app.apple_music_fetch import get_apple_music_data
 from tuneiq_app.web_scraper import scrape_music_trends, enrich_streaming_data
+from tuneiq_app.predictor import predict_impact
 
 def load_sample_data() -> pd.DataFrame:
     """Load Burna Boy sample streaming data."""
@@ -150,3 +152,37 @@ def enrich_data_with_web(df: pd.DataFrame, artist_name: str) -> pd.DataFrame:
     except Exception as e:
         print(f"✗ Data enrichment failed: {e}")
         return df
+
+
+def get_model_predictions(df: pd.DataFrame) -> Dict:
+    """
+    Run the TuneIQ GDP & Jobs model on the provided DataFrame.
+    Uses ML model to predict economic impact from streaming data.
+    
+    Args:
+        df: DataFrame with streaming data (can be from API or web scraping)
+    
+    Returns:
+        dict with keys:
+            - predicted_gdp: float or None
+            - predicted_jobs: float or None
+            - confidence: float or None
+            - error: str or None (error message if prediction failed)
+    """
+    try:
+        if df.empty:
+            return {
+                "predicted_gdp": None,
+                "predicted_jobs": None,
+                "confidence": None,
+                "error": "Input data is empty"
+            }
+        return predict_impact(df)
+    except Exception as e:
+        print(f"Model prediction failed: {e}")
+        return {
+            "predicted_gdp": None,
+            "predicted_jobs": None,
+            "confidence": None,
+            "error": str(e)
+        }

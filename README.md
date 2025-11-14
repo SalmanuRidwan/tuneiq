@@ -10,12 +10,14 @@ TuneIQ Solution addresses a critical gap in Nigeria's music industry: the lack o
 
 - **Multi-Platform Analytics**: Aggregates data from Spotify, YouTube, and Apple Music
 - **Interactive Dashboard**: Intuitive UI with toggleable sections for focused analysis
+- **AI-Powered Economic Predictions**: Machine learning model predicts GDP contribution and job creation from streaming data
 - **Economic Impact Tracking**: Estimates direct revenue, indirect benefits, and cultural export value
 - **Revenue Gap Analysis**: Identifies potential underpayment regions for investigation
 - **Privacy-First Design**: Uses only country-level aggregated data, no personal information
 - **Flexible Data Sources**: 
   - Sample Mode: Uses example data for demos and testing
   - Live Mode: Connects to real platform APIs when credentials are provided
+  - Web Scraping: Real-time trends from web sources when APIs unavailable
 - **Platform Performance Comparison**: Compare streaming metrics across different platforms
 - **Dynamic Data Pipeline**: Robust data processing with automated tests
 
@@ -163,6 +165,28 @@ web_data = fetch_live_data(source="web", artist_name="Wizkid")
 # Enrich existing streaming data with web insights
 from data_pipeline import enrich_data_with_web
 enriched_df = enrich_data_with_web(streaming_df, "Wizkid")
+```
+
+## AI Economic Impact Prediction
+
+TuneIQ Insight integrates a pre-trained machine learning model (`tuneiq_gdp_jobs_model.joblib`) that estimates **GDP contribution and job creation** from streaming data.
+
+### Using AI Predictions
+
+1. **Open Dashboard**: Run `streamlit run app.py`
+2. **Find Section**: Look for "🤖 AI-Powered Economic Predictions"  
+3. **Select Source**: Sample, Spotify, YouTube, or Web Scraper
+4. **Enter Artist**: Specify the artist to analyze
+5. **Run**: Click "🚀 Run AI Prediction"
+
+### Example
+
+```python
+from data_pipeline import get_model_predictions
+
+predictions = get_model_predictions(df)
+print(f"GDP: ₦{predictions['predicted_gdp']:,.0f}")
+print(f"Jobs: {int(predictions['predicted_jobs']):,}")
 ```
 
 ## Contributing

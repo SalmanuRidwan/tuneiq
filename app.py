@@ -28,6 +28,7 @@ detect_underpayment = None
 economic_impact_proxy = None
 COUNTRIES = None
 NIGERIAN_ARTISTS = None
+display_economic_impact_section = None
 
 try:
     # Prefer package-style imports (works when the package is installed or when executed as a module)
@@ -41,6 +42,8 @@ try:
     COUNTRIES = getattr(countries_mod, "COUNTRIES")
     na_mod = importlib.import_module("tuneiq_app.nigerian_artists")
     NIGERIAN_ARTISTS = getattr(na_mod, "NIGERIAN_ARTISTS")
+    ei_mod = importlib.import_module("tuneiq_app.economic_impact")
+    display_economic_impact_section = getattr(ei_mod, "display_economic_impact_section")
 except Exception:
     # Fallback when running app.py directly (e.g., `streamlit run app.py` from within the package folder)
     try:
@@ -54,6 +57,8 @@ except Exception:
         COUNTRIES = getattr(countries_mod, "COUNTRIES")
         na_mod = importlib.import_module("nigerian_artists")
         NIGERIAN_ARTISTS = getattr(na_mod, "NIGERIAN_ARTISTS")
+        ei_mod = importlib.import_module("economic_impact")
+        display_economic_impact_section = getattr(ei_mod, "display_economic_impact_section")
     except Exception as e:
         raise ImportError(
             "Could not import internal modules. Run from the project root or install the package "
@@ -149,7 +154,7 @@ html, body, .stApp {
 }
 
 /* ============================================
-   3. TYPOGRAPHY HIERARCHY
+   3. TYPOGRAPHY HIERARCHY'
    ============================================ */
 h1, h2, h3, h4, h5, h6 {
     font-weight: var(--font-weight-bold);
@@ -726,6 +731,89 @@ h3 {
 
 .shadow-glow-primary {
     box-shadow: 0 0 30px rgba(14, 165, 164, 0.3) !important;
+}
+
+/* ============================================
+   MODERN CARD STYLING FOR DASHBOARD
+   ============================================ */
+.main-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    padding: 20px;
+    margin-bottom: 25px;
+    border: 1px solid rgba(14, 165, 164, 0.1);
+}
+
+.kpi-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+    padding: 20px;
+    text-align: center;
+    border: 1px solid rgba(14, 165, 164, 0.1);
+    transition: all 0.3s ease;
+}
+
+.kpi-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(14, 165, 164, 0.15);
+}
+
+.kpi-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #0EA5A4;
+    margin: 10px 0;
+}
+
+.kpi-label {
+    font-size: 0.9rem;
+    color: #64748B;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.kpi-change {
+    font-size: 0.85rem;
+    margin-top: 8px;
+    font-weight: 600;
+}
+
+/* Sidebar styling */
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 20px 0;
+}
+
+.sidebar-nav button {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 10px;
+    border: 1px solid rgba(14, 165, 164, 0.2);
+    background: white;
+    color: #068D9D;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.sidebar-nav button:hover {
+    background: rgba(14, 165, 164, 0.08);
+    box-shadow: 0 2px 8px rgba(14, 165, 164, 0.1);
+}
+
+.section-header {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #1F213A;
+    margin: 30px 0 15px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 </style>
@@ -1648,6 +1736,13 @@ def main():
             'Value': format_ngn(impact_metrics['total_economic_impact_ngn'])
         }])
         st.table(impact_df)
+    
+    # AI Economic Impact & Job Creation Predictions
+    st.markdown("---")
+    if display_economic_impact_section:
+        display_economic_impact_section()
+    else:
+        st.warning("⚠️ AI Economic Impact module not loaded. Check imports.")
 
 if __name__ == "__main__":
     main()
