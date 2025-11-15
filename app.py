@@ -5,6 +5,7 @@ Streamlit dashboard for music streaming analytics and economic impact analysis.
 
 import streamlit as st
 import plotly.express as px
+import plotly.graph_objects as go
 import pandas as pd
 from typing import Dict, Optional
 import json
@@ -1258,6 +1259,242 @@ def render_kpi_cards(df: pd.DataFrame, impact_metrics: Dict):
     
     st.markdown(kpi_html, unsafe_allow_html=True)
 
+# def render_charts(df: pd.DataFrame, selected_platforms=None):
+#     """Render main dashboard visualizations."""
+#     # Filter data based on selected platforms
+#     if selected_platforms:
+#         df = df[df['platform'].isin(selected_platforms)]
+    
+#     # If no data after filtering, show message and return
+#     if df.empty:
+#         st.warning("No data available for the selected platforms. Please select at least one platform.")
+#         return
+    
+#     # Add enhanced chart styling
+#     chart_css = """
+#     <style>
+#     .chart-section {
+#         margin: 40px 0 20px 0;
+#     }
+    
+#     .chart-title {
+#         font-size: 1.25rem;
+#         font-weight: 700;
+#         color: #1F213A;
+#         margin-bottom: 20px;
+#         padding-bottom: 12px;
+#         border-bottom: 3px solid #0EA5A4;
+#         display: inline-block;
+#     }
+    
+#     .chart-wrapper {
+#         background: white;
+#         border-radius: 16px;
+#         padding: 20px;
+#         margin: 20px 0;
+#         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+#         border: 1px solid rgba(14, 165, 164, 0.1);
+#         transition: all 0.3s ease;
+#     }
+    
+#     .chart-wrapper:hover {
+#         box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+#     }
+#     </style>
+#     """
+#     st.markdown(chart_css, unsafe_allow_html=True)
+        
+#     # Compute per-country impact and identify top-10 countries by impact
+#     # Ensure expected_revenue_ngn exists (estimate_royalties called earlier in main)
+#     country_impact = df.groupby('country').agg({
+#         'streams': 'sum',
+#         'expected_revenue_ngn': 'sum',
+#         'actual_revenue_ngn': 'sum'
+#     }).reset_index()
+#     country_impact['revenue_gap'] = country_impact['expected_revenue_ngn'] - country_impact['actual_revenue_ngn']
+#     # Define impact_value as expected revenue (proxy for economic impact)
+#     country_impact['impact_value_ngn'] = country_impact['expected_revenue_ngn']
+#     # Top 10 high impact countries
+#     top10 = country_impact.sort_values('impact_value_ngn', ascending=False).head(10).copy()
+
+#     # Global Streaming Distribution (choropleth colored by streams, with top-10 highlighted)
+#     st.markdown('<div class="chart-section"><div class="chart-title">🌍 Global Streaming Distribution</div></div>', unsafe_allow_html=True)
+#     st.markdown('<div class="chart-wrapper">', unsafe_allow_html=True)
+    
+#     geo_data = country_impact.copy()
+#     # Add a flag to indicate top10
+#     geo_data['is_top10'] = geo_data['country'].isin(top10['country']).astype(int)
+
+#     fig_map = px.choropleth(
+#         geo_data,
+#         locations='country',
+#         locationmode='country names',
+#         color='streams',
+#         color_continuous_scale='Viridis',
+#         template="plotly_white",
+#         title=None,
+#         hover_name='country',
+#         hover_data={'streams': ':,'}
+#     )
+    
+#     fig_map.update_layout(
+#         height=500,
+#         margin=dict(l=0, r=0, t=0, b=0),
+#         font=dict(family="Inter, sans-serif", size=12),
+#         geo=dict(
+#             showland=True,
+#             landcolor='#f0f0f0',
+#             coastlinecolor='#e0e0e0',
+#             oceancolor='#e8f4f8'
+#         ),
+#         coloraxis_colorbar=dict(title="Streams", thickness=15)
+#     )
+
+#     # Overlay top-10 markers to highlight them
+#     try:
+#         fig_scatter = px.scatter_geo(
+#             top10,
+#             locations='country',
+#             locationmode='country names',
+#             size='impact_value_ngn',
+#             hover_name='country',
+#             projection='natural earth'
+#         )
+#         # Add scatter traces to choropleth
+#         for trace in fig_scatter.data:
+#             fig_map.add_trace(trace)
+#     except Exception:
+#         # Fallback: ignore overlay if scatter fails due to location lookups
+#         pass
+
+#     st.plotly_chart(fig_map, use_container_width=True)
+#     st.markdown('</div>', unsafe_allow_html=True)
+
+#     # Streaming Trends and Revenue Analysis in equal columns
+#     col1, col2 = st.columns(2)
+
+#     with col1:
+#         # Streams by Platform
+#         st.markdown('<div class="chart-section"><div class="chart-title">📈 Streaming Trends</div></div>', unsafe_allow_html=True)
+#         st.markdown('<div class="chart-wrapper">', unsafe_allow_html=True)
+#         platform_data = df.groupby('platform')['streams'].sum().reset_index()
+        
+#         # Add platform icons
+#         platform_icons = {
+#             'Spotify': '🎵',
+#             'YouTube': '▶️',
+#             'Apple Music': '🍎'
+#         }
+#         platform_data['platform_label'] = platform_data['platform'].apply(
+#             lambda x: f"{platform_icons.get(x, '')} {x}"
+#         )
+        
+#         fig_platform = px.bar(
+#             platform_data,
+#             x='platform_label',
+#             y='streams',
+#             color='platform',
+#             template="plotly_white",
+#             labels={'platform_label': 'Platform', 'streams': 'Total Streams'}
+#         )
+        
+#         # Enhanced styling
+#         fig_platform.update_traces(
+#             marker_line_color='rgba(14, 165, 164, 0.3)',
+#             marker_line_width=2,
+#             opacity=0.85
+#         )
+        
+#         # Update layout
+#         fig_platform.update_layout(
+#             showlegend=False,
+#             height=400,
+#             margin=dict(l=0, r=0, t=20, b=0),
+#             font=dict(family="Inter, sans-serif", size=12),
+#             xaxis_tickangle=-45,
+#             hovermode='x unified'
+#         )
+        
+#         st.plotly_chart(fig_platform, use_container_width=True)
+        
+#         # Add platform stats with export (modebar-style header)
+#         with st.expander("Platform Statistics"):
+#             stats_df = platform_data.copy()
+#             total_streams = stats_df['streams'].sum()
+#             stats_df['percentage'] = (stats_df['streams'] / total_streams * 100).round(2)
+
+#             # Keep numeric values for export
+#             stats_export = stats_df.copy()
+
+#             # Format for display
+#             stats_display = stats_df.copy()
+#             stats_display['streams'] = stats_display['streams'].map(lambda x: f"{int(x):,}")
+#             stats_display['percentage'] = stats_display['percentage'].map(lambda x: f"{x}%")
+
+#             # Render toolbar above the table (camera, zoom area, zoom in/out, fullscreen, download)
+#             render_table_toolbar(
+#                 "📊 Platform Statistics",
+#                 df=stats_export[['platform', 'streams', 'percentage']],
+#                 file_name="platform_statistics.csv"
+#             )
+
+#             st.dataframe(
+#                 stats_display[['platform', 'streams', 'percentage']],
+#                 column_config={
+#                     "platform": "Platform",
+#                     "streams": "Total Streams",
+#                     "percentage": "Market Share"
+#                 },
+#                 hide_index=True,
+#                 use_container_width=True
+#             )
+#         st.markdown('</div>', unsafe_allow_html=True)
+
+#     with col2:
+#         # Revenue Gap Analysis - show top-10 high impact countries by default
+#         st.markdown('<div class="chart-section"><div class="chart-title">💹 Revenue Gap Analysis</div></div>', unsafe_allow_html=True)
+#         st.markdown('<div class="chart-wrapper">', unsafe_allow_html=True)
+        
+#         show_revenue_details = st.checkbox("Show full country list", value=False)
+
+#         if show_revenue_details:
+#             display_df = country_impact.sort_values('revenue_gap', ascending=False)
+#         else:
+#             display_df = top10.copy()
+
+#         # Keep original values for export
+#         export_df = display_df.copy()
+        
+#         display_df = display_df.assign(
+#             streams=display_df['streams'].map('{:,.0f}'.format),
+#             expected_revenue_ngn=display_df['expected_revenue_ngn'].map(lambda x: f"₦{x:,.0f}"),
+#             actual_revenue_ngn=display_df['actual_revenue_ngn'].map(lambda x: f"₦{x:,.0f}"),
+#             revenue_gap=display_df['revenue_gap'].map(lambda x: f"₦{x:,.0f}")
+#         )
+
+#         # Toolbar above the table (replaces previous inline controls)
+#         render_table_toolbar(
+#             "💹 Revenue Gap Analysis",
+#             df=export_df[['country', 'streams', 'expected_revenue_ngn', 'actual_revenue_ngn', 'revenue_gap']],
+#             file_name="revenue_gap_analysis.csv"
+#         )
+
+#         st.dataframe(
+#             display_df[['country', 'streams', 'expected_revenue_ngn', 'actual_revenue_ngn', 'revenue_gap']],
+#             use_container_width=True,
+#             hide_index=True,
+#             column_config={
+#                 'country': st.column_config.TextColumn('Country', width='small'),
+#                 'streams': st.column_config.TextColumn('Streams', width='medium'),
+#                 'expected_revenue_ngn': st.column_config.TextColumn('Expected Revenue', width='medium'),
+#                 'actual_revenue_ngn': st.column_config.TextColumn('Actual Revenue', width='medium'),
+#                 'revenue_gap': st.column_config.TextColumn('Gap', width='medium')
+#             }
+#         )
+#         st.markdown('</div>', unsafe_allow_html=True)
+
+#         render_revenue_gap_visualization(country_impact, top10)
+
 def render_charts(df: pd.DataFrame, selected_platforms=None):
     """Render main dashboard visualizations."""
     # Filter data based on selected platforms
@@ -1299,29 +1536,33 @@ def render_charts(df: pd.DataFrame, selected_platforms=None):
     .chart-wrapper:hover {
         box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
     }
+    
+    .mini-card {
+        background: linear-gradient(135deg, rgba(14, 165, 164, 0.05), rgba(124, 58, 237, 0.02));
+        border-radius: 12px;
+        padding: 16px;
+        border: 1px solid rgba(14, 165, 164, 0.15);
+        height: 100%;
+    }
     </style>
     """
     st.markdown(chart_css, unsafe_allow_html=True)
         
     # Compute per-country impact and identify top-10 countries by impact
-    # Ensure expected_revenue_ngn exists (estimate_royalties called earlier in main)
     country_impact = df.groupby('country').agg({
         'streams': 'sum',
         'expected_revenue_ngn': 'sum',
         'actual_revenue_ngn': 'sum'
     }).reset_index()
     country_impact['revenue_gap'] = country_impact['expected_revenue_ngn'] - country_impact['actual_revenue_ngn']
-    # Define impact_value as expected revenue (proxy for economic impact)
     country_impact['impact_value_ngn'] = country_impact['expected_revenue_ngn']
-    # Top 10 high impact countries
     top10 = country_impact.sort_values('impact_value_ngn', ascending=False).head(10).copy()
 
-    # Global Streaming Distribution (choropleth colored by streams, with top-10 highlighted)
+    # Global Streaming Distribution (choropleth)
     st.markdown('<div class="chart-section"><div class="chart-title">🌍 Global Streaming Distribution</div></div>', unsafe_allow_html=True)
     st.markdown('<div class="chart-wrapper">', unsafe_allow_html=True)
     
     geo_data = country_impact.copy()
-    # Add a flag to indicate top10
     geo_data['is_top10'] = geo_data['country'].isin(top10['country']).astype(int)
 
     fig_map = px.choropleth(
@@ -1349,7 +1590,6 @@ def render_charts(df: pd.DataFrame, selected_platforms=None):
         coloraxis_colorbar=dict(title="Streams", thickness=15)
     )
 
-    # Overlay top-10 markers to highlight them
     try:
         fig_scatter = px.scatter_geo(
             top10,
@@ -1359,23 +1599,23 @@ def render_charts(df: pd.DataFrame, selected_platforms=None):
             hover_name='country',
             projection='natural earth'
         )
-        # Add scatter traces to choropleth
         for trace in fig_scatter.data:
             fig_map.add_trace(trace)
     except Exception:
-        # Fallback: ignore overlay if scatter fails due to location lookups
         pass
 
     st.plotly_chart(fig_map, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # Streaming Trends and Revenue Analysis in equal columns
-    col1, col2 = st.columns(2)
-
-    with col1:
-        # Streams by Platform
-        st.markdown('<div class="chart-section"><div class="chart-title">📈 Streaming Trends</div></div>', unsafe_allow_html=True)
+    # ===== NEW LAYOUT: Streaming Trends 2 Column Grid =====
+    st.markdown('<div class="chart-section"><div class="chart-title">📈 Streaming Trends</div></div>', unsafe_allow_html=True)
+    
+    streaming_col1, streaming_col2 = st.columns(2)
+    
+    with streaming_col1:
         st.markdown('<div class="chart-wrapper">', unsafe_allow_html=True)
+        st.markdown("#### Platform Distribution")
+        
         platform_data = df.groupby('platform')['streams'].sum().reset_index()
         
         # Add platform icons
@@ -1394,7 +1634,8 @@ def render_charts(df: pd.DataFrame, selected_platforms=None):
             y='streams',
             color='platform',
             template="plotly_white",
-            labels={'platform_label': 'Platform', 'streams': 'Total Streams'}
+            labels={'platform_label': 'Platform', 'streams': 'Total Streams'},
+            color_discrete_sequence=['#0EA5A4', '#F59E0B', '#7C3AED']
         )
         
         # Enhanced styling
@@ -1408,88 +1649,302 @@ def render_charts(df: pd.DataFrame, selected_platforms=None):
         fig_platform.update_layout(
             showlegend=False,
             height=400,
-            margin=dict(l=0, r=0, t=20, b=0),
-            font=dict(family="Inter, sans-serif", size=12),
+            margin=dict(l=0, r=0, t=20, b=60),
+            font=dict(family='Inter, sans-serif', size=11),
             xaxis_tickangle=-45,
-            hovermode='x unified'
+            hovermode='x unified',
+            plot_bgcolor='rgba(244, 247, 245, 0.5)',
+            xaxis=dict(gridcolor='rgba(14, 165, 164, 0.1)'),
+            yaxis=dict(gridcolor='rgba(14, 165, 164, 0.1)')
         )
         
         st.plotly_chart(fig_platform, use_container_width=True)
-        
-        # Add platform stats with export (modebar-style header)
-        with st.expander("Platform Statistics"):
-            stats_df = platform_data.copy()
-            total_streams = stats_df['streams'].sum()
-            stats_df['percentage'] = (stats_df['streams'] / total_streams * 100).round(2)
-
-            # Keep numeric values for export
-            stats_export = stats_df.copy()
-
-            # Format for display
-            stats_display = stats_df.copy()
-            stats_display['streams'] = stats_display['streams'].map(lambda x: f"{int(x):,}")
-            stats_display['percentage'] = stats_display['percentage'].map(lambda x: f"{x}%")
-
-            # Render toolbar above the table (camera, zoom area, zoom in/out, fullscreen, download)
-            render_table_toolbar(
-                "📊 Platform Statistics",
-                df=stats_export[['platform', 'streams', 'percentage']],
-                file_name="platform_statistics.csv"
-            )
-
-            st.dataframe(
-                stats_display[['platform', 'streams', 'percentage']],
-                column_config={
-                    "platform": "Platform",
-                    "streams": "Total Streams",
-                    "percentage": "Market Share"
-                },
-                hide_index=True,
-                use_container_width=True
-            )
         st.markdown('</div>', unsafe_allow_html=True)
-
-    with col2:
-        # Revenue Gap Analysis - show top-10 high impact countries by default
-        st.markdown('<div class="chart-section"><div class="chart-title">💹 Revenue Gap Analysis</div></div>', unsafe_allow_html=True)
+    
+    with streaming_col2:
         st.markdown('<div class="chart-wrapper">', unsafe_allow_html=True)
+        st.markdown("#### Platform Statistics")
         
-        show_revenue_details = st.checkbox("Show full country list", value=False)
+        stats_df = platform_data.copy()
+        total_streams = stats_df['streams'].sum()
+        stats_df['percentage'] = (stats_df['streams'] / total_streams * 100).round(2)
 
-        if show_revenue_details:
-            display_df = country_impact.sort_values('revenue_gap', ascending=False)
-        else:
-            display_df = top10.copy()
+        # Keep numeric values for export
+        stats_export = stats_df.copy()
 
-        # Keep original values for export
-        export_df = display_df.copy()
-        
-        display_df = display_df.assign(
-            streams=display_df['streams'].map('{:,.0f}'.format),
-            expected_revenue_ngn=display_df['expected_revenue_ngn'].map(lambda x: f"₦{x:,.0f}"),
-            actual_revenue_ngn=display_df['actual_revenue_ngn'].map(lambda x: f"₦{x:,.0f}"),
-            revenue_gap=display_df['revenue_gap'].map(lambda x: f"₦{x:,.0f}")
-        )
+        # Format for display
+        stats_display = stats_df.copy()
+        stats_display['streams_formatted'] = stats_display['streams'].map(lambda x: f"{int(x):,}")
+        stats_display['percentage_formatted'] = stats_display['percentage'].map(lambda x: f"{x}%")
 
-        # Toolbar above the table (replaces previous inline controls)
+        # Render toolbar above the table
         render_table_toolbar(
-            "💹 Revenue Gap Analysis",
-            df=export_df[['country', 'streams', 'expected_revenue_ngn', 'actual_revenue_ngn', 'revenue_gap']],
-            file_name="revenue_gap_analysis.csv"
+            "📊 Platform Statistics",
+            df=stats_export[['platform', 'streams', 'percentage']],
+            file_name="platform_statistics.csv"
         )
 
         st.dataframe(
-            display_df[['country', 'streams', 'expected_revenue_ngn', 'actual_revenue_ngn', 'revenue_gap']],
-            use_container_width=True,
-            hide_index=True,
+            stats_display[['platform', 'streams_formatted', 'percentage_formatted']],
             column_config={
-                'country': st.column_config.TextColumn('Country', width='small'),
-                'streams': st.column_config.TextColumn('Streams', width='medium'),
-                'expected_revenue_ngn': st.column_config.TextColumn('Expected Revenue', width='medium'),
-                'actual_revenue_ngn': st.column_config.TextColumn('Actual Revenue', width='medium'),
-                'revenue_gap': st.column_config.TextColumn('Gap', width='medium')
-            }
+                "platform": st.column_config.TextColumn("Platform", width="medium"),
+                "streams_formatted": st.column_config.TextColumn("Total Streams", width="medium"),
+                "percentage_formatted": st.column_config.TextColumn("Market Share", width="small")
+            },
+            hide_index=True,
+            use_container_width=True,
+            height=350
         )
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    # ===== NEW LAYOUT: Revenue Gap Analysis Grid =====
+    st.markdown('<div class="chart-section"><div class="chart-title">💰 Revenue Gap Analysis</div></div>', unsafe_allow_html=True)
+    
+    # Prepare visualization data
+    viz_data = top10.copy()
+    
+    # Row 1: Detailed Table (Left) and Expected vs Actual Chart (Right)
+    row1_col1, row1_col2 = st.columns(2)
+    
+    with row1_col1:
+        st.markdown('<div class="chart-wrapper">', unsafe_allow_html=True)
+        st.markdown("#### 📋 Revenue Gap Details")
+        
+        show_all = st.checkbox("Show all countries", value=False, key="show_all_revenue")
+        
+        display_data = country_impact if show_all else viz_data
+        display_data = display_data.sort_values('revenue_gap', ascending=False).copy()
+        
+        # Keep original for export
+        export_df = display_data.copy()
+        
+        # Format for display
+        display_data['Gap %'] = ((display_data['revenue_gap'] / display_data['expected_revenue_ngn']) * 100).round(1)
+        
+        display_formatted = display_data.assign(
+            expected_revenue_ngn=display_data['expected_revenue_ngn'].map(
+                lambda x: f"₦{x/1e6:.1f}M" if x >= 1e6 else f"₦{x/1e3:.0f}K"
+            ),
+            actual_revenue_ngn=display_data['actual_revenue_ngn'].map(
+                lambda x: f"₦{x/1e6:.1f}M" if x >= 1e6 else f"₦{x/1e3:.0f}K"
+            ),
+            revenue_gap=display_data['revenue_gap'].map(
+                lambda x: f"₦{x/1e6:.1f}M" if x >= 1e6 else f"₦{x/1e3:.0f}K"
+            ),
+        )
+        
+        # Toolbar
+        render_table_toolbar(
+            "Revenue Gap Details",
+            df=export_df[['country', 'expected_revenue_ngn', 'actual_revenue_ngn', 'revenue_gap']],
+            file_name="revenue_gap_details.csv"
+        )
+        
+        st.dataframe(
+            display_formatted[['country', 'expected_revenue_ngn', 'actual_revenue_ngn', 'revenue_gap', 'Gap %']],
+            column_config={
+                "country": st.column_config.TextColumn("Country", width="small"),
+                "expected_revenue_ngn": "Expected",
+                "actual_revenue_ngn": "Actual",
+                "revenue_gap": "Gap",
+                "Gap %": st.column_config.NumberColumn("Gap %", format="%.1f%%")
+            },
+            hide_index=True,
+            use_container_width=True,
+            height=350
+        )
+        
+        st.markdown('</div>', unsafe_allow_html=True)
+    
+    with row1_col2:
+        st.markdown('<div class="chart-wrapper">', unsafe_allow_html=True)
+        st.markdown("#### Expected vs Actual Revenue")
+        
+        # Create grouped bar chart
+        fig_revenue = go.Figure()
+        
+        # Add Expected Revenue bars
+        fig_revenue.add_trace(go.Bar(
+            name='Expected Revenue',
+            x=viz_data['country'],
+            y=viz_data['expected_revenue_ngn'],
+            marker=dict(
+                color='#0EA5A4',
+                line=dict(color='#0c8483', width=1)
+            ),
+            text=viz_data['expected_revenue_ngn'].apply(
+                lambda x: f"₦{x/1e6:.1f}M" if x >= 1e6 else f"₦{x/1e3:.0f}K"
+            ),
+            textposition='outside',
+            textfont=dict(size=9),
+            hovertemplate='<b>%{x}</b><br>Expected: ₦%{y:,.0f}<extra></extra>'
+        ))
+        
+        # Add Actual Revenue bars
+        fig_revenue.add_trace(go.Bar(
+            name='Actual Revenue',
+            x=viz_data['country'],
+            y=viz_data['actual_revenue_ngn'],
+            marker=dict(
+                color='#F59E0B',
+                line=dict(color='#d97706', width=1)
+            ),
+            text=viz_data['actual_revenue_ngn'].apply(
+                lambda x: f"₦{x/1e6:.1f}M" if x >= 1e6 else f"₦{x/1e3:.0f}K"
+            ),
+            textposition='outside',
+            textfont=dict(size=9),
+            hovertemplate='<b>%{x}</b><br>Actual: ₦%{y:,.0f}<extra></extra>'
+        ))
+        
+        fig_revenue.update_layout(
+            xaxis=dict(
+                tickangle=-45,
+                gridcolor='rgba(14, 165, 164, 0.1)',
+                showgrid=True
+            ),
+            yaxis=dict(
+                title='Revenue (NGN)',
+                gridcolor='rgba(14, 165, 164, 0.1)',
+                showgrid=True
+            ),
+            barmode='group',
+            template='plotly_white',
+            hovermode='x unified',
+            plot_bgcolor='rgba(244, 247, 245, 0.5)',
+            paper_bgcolor='white',
+            font=dict(family='Inter, sans-serif', color='#1F213A', size=11),
+            legend=dict(
+                orientation='h',
+                yanchor='bottom',
+                y=1.02,
+                xanchor='right',
+                x=1
+            ),
+            margin=dict(t=50, b=80, l=50, r=20),
+            height=400
+        )
+        
+        st.plotly_chart(fig_revenue, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Row 2: Heatmap (Left) and Revenue Gap Chart (Right)
+    row2_col1, row2_col2 = st.columns(2)
+    
+    with row2_col1:
+        st.markdown('<div class="chart-wrapper">', unsafe_allow_html=True)
+        st.markdown("#### 🔥 Revenue Comparison Heatmap")
+        
+        # Prepare heatmap data
+        heatmap_data = viz_data[['country', 'expected_revenue_ngn', 
+                                  'actual_revenue_ngn', 'revenue_gap']].copy()
+        
+        # Normalize for color scale
+        heatmap_data['gap_percentage'] = (
+            (heatmap_data['revenue_gap'] / heatmap_data['expected_revenue_ngn']) * 100
+        )
+        
+        # Create heatmap
+        fig_heatmap = go.Figure(data=go.Heatmap(
+            z=[heatmap_data['expected_revenue_ngn'], 
+               heatmap_data['actual_revenue_ngn'],
+               heatmap_data['revenue_gap']],
+            x=heatmap_data['country'],
+            y=['Expected Revenue', 'Actual Revenue', 'Revenue Gap'],
+            colorscale=[
+                [0, '#F59E0B'],      # Orange for low
+                [0.5, '#0EA5A4'],    # Teal for medium
+                [1, '#7C3AED']       # Purple for high
+            ],
+            text=[[f"₦{val/1e6:.1f}M" if val >= 1e6 else f"₦{val/1e3:.0f}K" 
+                   for val in heatmap_data['expected_revenue_ngn']],
+                  [f"₦{val/1e6:.1f}M" if val >= 1e6 else f"₦{val/1e3:.0f}K" 
+                   for val in heatmap_data['actual_revenue_ngn']],
+                  [f"₦{val/1e6:.1f}M" if val >= 1e6 else f"₦{val/1e3:.0f}K" 
+                   for val in heatmap_data['revenue_gap']]],
+            texttemplate='%{text}',
+            textfont=dict(size=10, color='white'),
+            hovertemplate='%{y}<br>%{x}: %{text}<extra></extra>',
+            colorbar=dict(
+                title='Amount (NGN)',
+                thickness=15,
+                len=0.7
+            )
+        ))
+        
+        fig_heatmap.update_layout(
+            template='plotly_white',
+            height=400,
+            margin=dict(t=20, b=80, l=120, r=20),
+            xaxis=dict(
+                tickangle=-45,
+                side='bottom'
+            ),
+            yaxis=dict(
+                side='left'
+            ),
+            font=dict(family='Inter, sans-serif', size=11)
+        )
+        
+        st.plotly_chart(fig_heatmap, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+    
+    with row2_col2:
+        st.markdown('<div class="chart-wrapper">', unsafe_allow_html=True)
+        st.markdown("#### Revenue Gap by Country")
+        
+        # Create gap bar chart
+        waterfall_data = []
+        for _, row in viz_data.iterrows():
+            gap = row['expected_revenue_ngn'] - row['actual_revenue_ngn']
+            waterfall_data.append({
+                'country': row['country'],
+                'gap': gap
+            })
+        
+        waterfall_df = pd.DataFrame(waterfall_data)
+        colors = ['#DC2626' if gap > 0 else '#16A34A' for gap in waterfall_df['gap']]
+        
+        fig_gap = go.Figure()
+        
+        fig_gap.add_trace(go.Bar(
+            x=waterfall_df['country'],
+            y=waterfall_df['gap'],
+            marker=dict(
+                color=colors,
+                line=dict(color='rgba(0,0,0,0.3)', width=1)
+            ),
+            text=waterfall_df['gap'].apply(
+                lambda x: f"₦{abs(x)/1e6:.1f}M" if abs(x) >= 1e6 else f"₦{abs(x)/1e3:.0f}K"
+            ),
+            textposition='outside',
+            textfont=dict(size=9),
+            hovertemplate='<b>%{x}</b><br>Gap: ₦%{y:,.0f}<extra></extra>',
+            name='Revenue Gap'
+        ))
+        
+        fig_gap.update_layout(
+            xaxis=dict(
+                tickangle=-45,
+                gridcolor='rgba(14, 165, 164, 0.1)'
+            ),
+            yaxis=dict(
+                title='Revenue Gap (NGN)',
+                gridcolor='rgba(14, 165, 164, 0.1)',
+                zeroline=True,
+                zerolinecolor='rgba(14, 165, 164, 0.3)',
+                zerolinewidth=2
+            ),
+            template='plotly_white',
+            plot_bgcolor='rgba(244, 247, 245, 0.5)',
+            paper_bgcolor='white',
+            height=400,
+            showlegend=False,
+            margin=dict(t=20, b=80, l=50, r=20),
+            font=dict(family='Inter, sans-serif', color='#1F213A', size=11)
+        )
+        
+        st.plotly_chart(fig_gap, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
 def main():
@@ -2170,6 +2625,248 @@ def main():
     
     # ============================================
 
+# helper function for revenue gap visualizaton
+def render_revenue_gap_visualization(country_impact, top10):
+    """
+    Render an engaging revenue gap analysis visualization as a standalone section
+    
+    Args:
+        country_impact: DataFrame with country-level aggregated data
+        top10: DataFrame with top 10 countries by impact
+    """
+    
+    # Section header with styling
+    st.markdown("---")
+    st.markdown("""
+    <div style="padding: 20px; background: linear-gradient(135deg, rgba(14, 165, 164, 0.1), rgba(124, 58, 237, 0.05)); 
+                border-radius: 12px; margin: 20px 0;">
+        <h2 style="color: #0EA5A4; margin: 0;">💰 Revenue Gap Analysis</h2>
+        <p style="color: #64748B; margin-top: 8px;">
+            Comparing expected vs actual revenue to identify underpayment opportunities
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Option 1: Grouped Bar Chart (Recommended for clarity)
+    
+    # Prepare data for visualization
+    viz_data = top10.copy()
+    
+    # Create grouped bar chart
+    fig_revenue = go.Figure()
+    
+    # Add Expected Revenue bars
+    fig_revenue.add_trace(go.Bar(
+        name='Expected Revenue',
+        x=viz_data['country'],
+        y=viz_data['expected_revenue_ngn'],
+        marker=dict(
+            color='#0EA5A4',  # Your primary teal color
+            line=dict(color='#0c8483', width=1)
+        ),
+        text=viz_data['expected_revenue_ngn'].apply(lambda x: f"₦{x:,.0f}"),
+        textposition='outside',
+        textfont=dict(size=10),
+        hovertemplate='<b>%{x}</b><br>Expected: ₦%{y:,.0f}<extra></extra>'
+    ))
+    
+    # Add Actual Revenue bars
+    fig_revenue.add_trace(go.Bar(
+        name='Actual Revenue',
+        x=viz_data['country'],
+        y=viz_data['actual_revenue_ngn'],
+        marker=dict(
+            color='#F59E0B',  # Your accent orange color
+            line=dict(color='#d97706', width=1)
+        ),
+        text=viz_data['actual_revenue_ngn'].apply(lambda x: f"₦{x:,.0f}"),
+        textposition='outside',
+        textfont=dict(size=10),
+        hovertemplate='<b>%{x}</b><br>Actual: ₦%{y:,.0f}<extra></extra>'
+    ))
+    
+    # Update layout for modern look
+    fig_revenue.update_layout(
+        title={
+            'text': 'Expected vs Actual Revenue by Country',
+            'y': 0.95,
+            'x': 0.5,
+            'xanchor': 'center',
+            'yanchor': 'top',
+            'font': dict(size=18, color='#1F213A', weight='bold')
+        },
+        xaxis=dict(
+            title='Country',
+            tickangle=-45,
+            gridcolor='rgba(14, 165, 164, 0.1)',
+            showgrid=True
+        ),
+        yaxis=dict(
+            title='Revenue (NGN)',
+            gridcolor='rgba(14, 165, 164, 0.1)',
+            showgrid=True
+        ),
+        barmode='group',
+        template='plotly_white',
+        hovermode='x unified',
+        plot_bgcolor='rgba(244, 247, 245, 0.5)',
+        paper_bgcolor='white',
+        font=dict(family='Inter, sans-serif', color='#1F213A'),
+        legend=dict(
+            orientation='h',
+            yanchor='bottom',
+            y=1.02,
+            xanchor='right',
+            x=1,
+            bgcolor='rgba(255, 255, 255, 0.9)',
+            bordercolor='rgba(14, 165, 164, 0.2)',
+            borderwidth=1
+        ),
+        margin=dict(t=100, b=100),
+        height=500
+    )
+    
+    st.plotly_chart(fig_revenue, use_container_width=True)
+    
+    # Option 2: Revenue Gap Waterfall Chart (Shows the gap more dramatically)
+    st.markdown("### Revenue Gap Breakdown")
+    
+    # Calculate total gaps
+    total_expected = viz_data['expected_revenue_ngn'].sum()
+    total_actual = viz_data['actual_revenue_ngn'].sum()
+    total_gap = total_expected - total_actual
+    
+    # Create waterfall data
+    waterfall_data = []
+    cumulative = 0
+    
+    for _, row in viz_data.iterrows():
+        gap = row['expected_revenue_ngn'] - row['actual_revenue_ngn']
+        waterfall_data.append({
+            'country': row['country'],
+            'gap': gap,
+            'cumulative': cumulative + gap
+        })
+        cumulative += gap
+    
+    waterfall_df = pd.DataFrame(waterfall_data)
+    
+    # Create waterfall chart
+    fig_waterfall = go.Figure()
+    
+    # Add bars for each country's gap
+    colors = ['#DC2626' if gap > 0 else '#16A34A' 
+              for gap in waterfall_df['gap']]
+    
+    fig_waterfall.add_trace(go.Bar(
+        x=waterfall_df['country'],
+        y=waterfall_df['gap'],
+        marker=dict(
+            color=colors,
+            line=dict(color='rgba(0,0,0,0.3)', width=1)
+        ),
+        text=waterfall_df['gap'].apply(lambda x: f"₦{x:,.0f}"),
+        textposition='outside',
+        hovertemplate='<b>%{x}</b><br>Gap: ₦%{y:,.0f}<extra></extra>',
+        name='Revenue Gap'
+    ))
+    
+    fig_waterfall.update_layout(
+        title={
+            'text': f'Revenue Gap by Country (Total Gap: ₦{total_gap:,.0f})',
+            'y': 0.95,
+            'x': 0.5,
+            'xanchor': 'center',
+            'yanchor': 'top'
+        },
+        xaxis=dict(
+            title='Country',
+            tickangle=-45,
+            gridcolor='rgba(14, 165, 164, 0.1)'
+        ),
+        yaxis=dict(
+            title='Revenue Gap (NGN)',
+            gridcolor='rgba(14, 165, 164, 0.1)',
+            zeroline=True,
+            zerolinecolor='rgba(14, 165, 164, 0.3)',
+            zerolinewidth=2
+        ),
+        template='plotly_white',
+        plot_bgcolor='rgba(244, 247, 245, 0.5)',
+        paper_bgcolor='white',
+        height=400,
+        showlegend=False
+    )
+    
+    st.plotly_chart(fig_waterfall, use_container_width=True)
+    
+    # Option 3: Heatmap for detailed comparison
+    with st.expander("📊 Detailed Revenue Comparison Matrix"):
+        # Prepare heatmap data
+        heatmap_data = viz_data[['country', 'expected_revenue_ngn', 
+                                  'actual_revenue_ngn', 'revenue_gap']].copy()
+        
+        # Normalize for color scale
+        heatmap_data['gap_percentage'] = (
+            (heatmap_data['revenue_gap'] / heatmap_data['expected_revenue_ngn']) * 100
+        )
+        
+        # Create heatmap
+        fig_heatmap = go.Figure(data=go.Heatmap(
+            z=[heatmap_data['expected_revenue_ngn'], 
+               heatmap_data['actual_revenue_ngn'],
+               heatmap_data['revenue_gap']],
+            x=heatmap_data['country'],
+            y=['Expected Revenue', 'Actual Revenue', 'Revenue Gap'],
+            colorscale=[
+                [0, '#F59E0B'],      # Orange for low
+                [0.5, '#0EA5A4'],    # Teal for medium
+                [1, '#7C3AED']       # Purple for high
+            ],
+            text=[[f"₦{val:,.0f}" for val in heatmap_data['expected_revenue_ngn']],
+                  [f"₦{val:,.0f}" for val in heatmap_data['actual_revenue_ngn']],
+                  [f"₦{val:,.0f}" for val in heatmap_data['revenue_gap']]],
+            texttemplate='%{text}',
+            textfont=dict(size=10),
+            hovertemplate='%{y}<br>%{x}: %{text}<extra></extra>',
+            colorbar=dict(title='Amount (NGN)')
+        ))
+        
+        fig_heatmap.update_layout(
+            title='Revenue Comparison Heatmap',
+            xaxis=dict(tickangle=-45),
+            template='plotly_white',
+            height=300
+        )
+        
+        st.plotly_chart(fig_heatmap, use_container_width=True)
+    
+    # # Summary metrics in columns
+    # col1, col2, col3 = st.columns(3)
+    
+    # with col1:
+    #     st.metric(
+    #         "Total Expected Revenue",
+    #         f"₦{total_expected:,.0f}",
+    #         help="Sum of expected revenue across top 10 countries"
+    #     )
+    
+    # with col2:
+    #     st.metric(
+    #         "Total Actual Revenue",
+    #         f"₦{total_actual:,.0f}",
+    #         help="Sum of actual revenue received"
+    #     )
+    
+    # with col3:
+    #     gap_percentage = ((total_gap / total_expected) * 100) if total_expected > 0 else 0
+    #     st.metric(
+    #         "Total Revenue Gap",
+    #         f"₦{total_gap:,.0f}",
+    #         f"-{gap_percentage:.1f}%",
+    #         delta_color="inverse",
+    #         help="Difference between expected and actual revenue"
+    #     )
 
 if __name__ == "__main__":
     main()
